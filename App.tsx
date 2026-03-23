@@ -3,14 +3,38 @@ import React, { useState, useEffect } from 'react';
 import { ObjectMode } from './components/ObjectMode';
 import { CharacterMode } from './components/CharacterMode';
 import { StoryMode } from './components/StoryMode';
+import { VisionMode } from './components/VisionMode';
+import { FigureMode } from './components/FigureMode';
+import { MovieSetMode } from './components/MovieSetMode';
+import { TalkingMode } from './components/TalkingMode';
 import { setCustomApiKey } from './services/geminiService';
-import { CubeIcon, UserIcon, BookOpenIcon, Cog6ToothIcon, XMarkIcon, KeyIcon, PhotoIcon } from '@heroicons/react/24/solid';
+import { CubeIcon, UserIcon, BookOpenIcon, Cog6ToothIcon, XMarkIcon, KeyIcon, PhotoIcon, EyeIcon, PuzzlePieceIcon, FaceSmileIcon, SparklesIcon } from '@heroicons/react/24/solid';
 
 const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'object' | 'character' | 'story'>('object');
+  const [activeTab, setActiveTab] = useState<'object' | 'character' | 'story' | 'vision' | 'figure' | 'talking' | 'movie'>('object');
   const [showSettings, setShowSettings] = useState(false);
   const [apiKey, setApiKey] = useState(localStorage.getItem('gemini_api_key') || '');
   const [skipImages, setSkipImages] = useState(localStorage.getItem('skip_images') === 'true');
+  const [hasPaidKey, setHasPaidKey] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const checkKey = async () => {
+      const aistudio = (window as any).aistudio;
+      if (aistudio?.hasSelectedApiKey) {
+        const hasKey = await aistudio.hasSelectedApiKey();
+        setHasPaidKey(hasKey);
+      }
+    };
+    checkKey();
+  }, []);
+
+  const handleOpenKeySelector = async () => {
+    const aistudio = (window as any).aistudio;
+    if (aistudio?.openSelectKey) {
+      await aistudio.openSelectKey();
+      setHasPaidKey(true); // Assume success as per instructions
+    }
+  };
 
   useEffect(() => {
     setCustomApiKey(apiKey);
@@ -60,42 +84,73 @@ const App: React.FC = () => {
   }, []);
 
   return (
-    <div className="flex h-screen w-full bg-background overflow-hidden">
-      {/* Sidebar Navigation */}
-      <div className="w-20 lg:w-24 bg-[#0a0a14] border-r border-border flex flex-col items-center py-8 space-y-6 z-50 shrink-0">
-        <div className="text-[#0066ff] font-black text-2xl mb-4">AP</div>
-        
-        <button 
-          onClick={() => setActiveTab('object')}
-          className={`p-4 rounded-2xl transition-all ${activeTab === 'object' ? 'bg-[#0066ff] text-white shadow-lg shadow-[#0066ff]/30' : 'text-gray-500 hover:text-white hover:bg-white/5'}`}
-          title="ปลุกเสกสิ่งของ"
-        >
-          <CubeIcon className="w-6 h-6 lg:w-8 lg:h-8" />
-        </button>
+    <div className="flex flex-col h-screen w-full bg-background overflow-hidden">
+      {/* Top Navigation Bar */}
+      <div className="h-16 lg:h-20 bg-[#0a0a14] border-b border-border flex items-center px-4 lg:px-8 z-50 shrink-0 justify-between">
+        <div className="flex items-center gap-4 lg:gap-8">
+          <div className="text-[#0066ff] font-black text-xl lg:text-2xl tracking-tighter">ROAST MASTER</div>
+          
+          <nav className="hidden md:flex items-center gap-1">
+            <TabButton 
+              active={activeTab === 'object'} 
+              onClick={() => setActiveTab('object')} 
+              icon={<CubeIcon className="w-5 h-5" />} 
+              label="ปลุกเสกสิ่งของ" 
+            />
+            <TabButton 
+              active={activeTab === 'character'} 
+              onClick={() => setActiveTab('character')} 
+              icon={<UserIcon className="w-5 h-5" />} 
+              label="สร้างตัวละคร" 
+            />
+            <TabButton 
+              active={activeTab === 'story'} 
+              onClick={() => setActiveTab('story')} 
+              icon={<BookOpenIcon className="w-5 h-5" />} 
+              label="แต่งเนื้อเรื่อง" 
+            />
+            <TabButton 
+              active={activeTab === 'vision'} 
+              onClick={() => setActiveTab('vision')} 
+              icon={<EyeIcon className="w-5 h-5" />} 
+              label="แกะ Prompt" 
+            />
+            <TabButton 
+              active={activeTab === 'figure'} 
+              onClick={() => setActiveTab('figure')} 
+              icon={<PuzzlePieceIcon className="w-5 h-5" />} 
+              label="เจนฟิกเกอร์" 
+            />
+            <TabButton 
+              active={activeTab === 'movie'} 
+              onClick={() => setActiveTab('movie')} 
+              icon={<SparklesIcon className="w-5 h-5" />} 
+              label="Abandoned Movie" 
+            />
+            <TabButton 
+              active={activeTab === 'talking'} 
+              onClick={() => setActiveTab('talking')} 
+              icon={<FaceSmileIcon className="w-5 h-5" />} 
+              label="หน้าพูดได้" 
+            />
+          </nav>
+        </div>
 
-        <button 
-          onClick={() => setActiveTab('character')}
-          className={`p-4 rounded-2xl transition-all ${activeTab === 'character' ? 'bg-[#0066ff] text-white shadow-lg shadow-[#0066ff]/30' : 'text-gray-500 hover:text-white hover:bg-white/5'}`}
-          title="สร้างตัวละคร"
-        >
-          <UserIcon className="w-6 h-6 lg:w-8 lg:h-8" />
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Mobile Menu (Simplified for now) */}
+          <div className="md:hidden flex items-center gap-1 overflow-x-auto max-w-[200px] no-scrollbar">
+             <button onClick={() => setActiveTab('object')} className={`p-2 rounded-lg ${activeTab === 'object' ? 'text-[#0066ff]' : 'text-gray-500'}`}><CubeIcon className="w-5 h-5" /></button>
+             <button onClick={() => setActiveTab('figure')} className={`p-2 rounded-lg ${activeTab === 'figure' ? 'text-[#0066ff]' : 'text-gray-500'}`}><PuzzlePieceIcon className="w-5 h-5" /></button>
+             <button onClick={() => setActiveTab('movie')} className={`p-2 rounded-lg ${activeTab === 'movie' ? 'text-[#0066ff]' : 'text-gray-500'}`}><SparklesIcon className="w-5 h-5" /></button>
+             <button onClick={() => setActiveTab('talking')} className={`p-2 rounded-lg ${activeTab === 'talking' ? 'text-[#0066ff]' : 'text-gray-500'}`}><FaceSmileIcon className="w-5 h-5" /></button>
+          </div>
 
-        <button 
-          onClick={() => setActiveTab('story')}
-          className={`p-4 rounded-2xl transition-all ${activeTab === 'story' ? 'bg-[#0066ff] text-white shadow-lg shadow-[#0066ff]/30' : 'text-gray-500 hover:text-white hover:bg-white/5'}`}
-          title="แต่งเนื้อเรื่อง"
-        >
-          <BookOpenIcon className="w-6 h-6 lg:w-8 lg:h-8" />
-        </button>
-
-        <div className="mt-auto pb-4">
           <button 
             onClick={() => setShowSettings(true)}
-            className="p-4 rounded-2xl text-gray-500 hover:text-white hover:bg-white/5 transition-all"
+            className="p-3 rounded-xl text-gray-500 hover:text-white hover:bg-white/5 transition-all"
             title="ตั้งค่า"
           >
-            <Cog6ToothIcon className="w-6 h-6 lg:w-8 lg:h-8" />
+            <Cog6ToothIcon className="w-6 h-6" />
           </button>
         </div>
       </div>
@@ -130,6 +185,27 @@ const App: React.FC = () => {
                 </div>
                 <p className="text-[10px] text-gray-500">
                   * หากไม่ใส่ จะใช้ Key ส่วนกลางของระบบ (ถ้ามี)
+                </p>
+              </div>
+
+              {/* Paid Key Selector */}
+              <div className="space-y-3">
+                <label className="text-xs font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                  <SparklesIcon className="w-4 h-4 text-yellow-500" /> Paid API Key (For Video/Veo)
+                </label>
+                <button 
+                  onClick={handleOpenKeySelector}
+                  className={`w-full p-4 rounded-xl border font-bold transition-all flex items-center justify-between ${
+                    hasPaidKey 
+                      ? 'bg-green-500/10 border-green-500/50 text-green-500' 
+                      : 'bg-yellow-500/10 border-yellow-500/50 text-yellow-500 hover:bg-yellow-500/20'
+                  }`}
+                >
+                  <span>{hasPaidKey ? '✓ เชื่อมต่อ Paid Key แล้ว' : 'เชื่อมต่อ Paid Key (สำหรับวิดีโอ)'}</span>
+                  <KeyIcon className="w-5 h-5" />
+                </button>
+                <p className="text-[10px] text-gray-500">
+                  * จำเป็นสำหรับการสร้างวิดีโอ (Veo) และภาพความละเอียดสูง ดูรายละเอียดที่ <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" className="text-[#0066ff] underline">Billing Docs</a>
                 </p>
               </div>
 
@@ -170,13 +246,31 @@ const App: React.FC = () => {
       )}
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-y-auto lg:overflow-hidden relative bg-background">
+      <div className="flex-1 overflow-y-auto relative bg-background">
         {activeTab === 'object' && <ObjectMode />}
         {activeTab === 'character' && <CharacterMode />}
         {activeTab === 'story' && <StoryMode />}
+        {activeTab === 'vision' && <VisionMode />}
+        {activeTab === 'figure' && <FigureMode />}
+        {activeTab === 'movie' && <MovieSetMode />}
+        {activeTab === 'talking' && <TalkingMode />}
       </div>
     </div>
   );
 };
+
+const TabButton = ({ active, onClick, icon, label }: { active: boolean, onClick: () => void, icon: React.ReactNode, label: string }) => (
+  <button 
+    onClick={onClick}
+    className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all ${
+      active 
+        ? 'bg-[#0066ff]/10 text-[#0066ff]' 
+        : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
+    }`}
+  >
+    {icon}
+    <span>{label}</span>
+  </button>
+);
 
 export default App;

@@ -109,6 +109,18 @@ const callWithRetry = async <T>(fn: () => Promise<T>, retries = MAX_RETRIES): Pr
       errorString.includes('429') ||
       errorString.includes('resource_exhausted');
 
+    const isPermissionError = 
+      errorMessage.includes('permission') || 
+      errorMessage.includes('403') ||
+      nestedErrorMessage.includes('permission') ||
+      nestedErrorMessage.includes('403') ||
+      errorString.includes('permission') ||
+      errorString.includes('403');
+
+    if (isPermissionError) {
+      throw new Error("PERMISSION_DENIED: กรุณาตรวจสอบ API Key ของคุณ หรือเชื่อมต่อ Paid API Key ในเมนูตั้งค่าเพื่อใช้งานฟีเจอร์นี้ (โดยเฉพาะการสร้างวิดีโอ)");
+    }
+
     const isTransientError = 
       isQuotaError ||
       errorMessage.includes('500') || 
@@ -374,7 +386,77 @@ export const generateVideo = async (prompt: string, imageBase64: string): Promis
     const response = await fetch(downloadLink, {
       method: 'GET',
       headers: {
-        'x-goog-api-key': process.env.API_KEY || '',
+        'x-goog-api-key': apiKey,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch video: ${response.statusText}`);
+    }
+
+    const blob = await response.blob();
+    return URL.createObjectURL(blob);
+  });
+};
+
+export const getTalkingVideoPrompt = (script: string, faceStyle: string = 'Cute'): string => {
+  const stylePrompts: Record<string, string> = {
+    'Cute': "Add a pair of big, expressive, cute cartoon eyes and a small, adorable talking mouth to the object/part in this image. The face should be integrated naturally but look like a character. The mouth should move in sync with the script.",
+    'Funny': "Add goofy, bulging cartoon eyes and a large, hilarious talking mouth with visible teeth to the object/part. The expressions should be exaggerated and funny. The mouth should move wildly in sync with the script.",
+    'Realistic': "Add realistic human-like eyes and a detailed human mouth to the object/part, creating a surreal 'living object' effect. The integration should be seamless and slightly creepy but fascinating. The mouth should move realistically in sync with the script.",
+    'Angry': "Add sharp, angry cartoon eyes with furrowed brows and a shouting mouth to the object/part. The face should look very frustrated and aggressive. The mouth should move forcefully in sync with the script."
+  };
+
+  const faceInstruction = stylePrompts[faceStyle] || stylePrompts['Cute'];
+
+  return `
+    ${faceInstruction}
+    
+    SCENE: The object/part in the provided image comes to life. 
+    ACTION: It is talking directly to the camera. Its eyes are blinking and looking around, and its mouth is moving perfectly in sync with this script: "${script}".
+    
+    VISUAL STYLE: Maintain the exact lighting, texture, and background of the original image. The added face should match the lighting of the scene. 
+    High-quality 3D animation, smooth motion, 4K resolution, photorealistic environment.
+  `.trim();
+};
+
+export const generateTalkingVideo = async (script: string, imageBase64: string, faceStyle: string = 'Cute'): Promise<string> => {
+  const apiKey = getEffectiveApiKey();
+  const ai = new GoogleGenAI({ apiKey });
+  
+  const prompt = getTalkingVideoPrompt(script, faceStyle);
+
+  return callWithRetry(async () => {
+    const base64Data = imageBase64.split(',')[1] || imageBase64;
+    
+    let operation = await ai.models.generateVideos({
+      model: 'veo-3.1-fast-generate-preview',
+      prompt: prompt,
+      image: {
+        imageBytes: base64Data,
+        mimeType: 'image/png',
+      },
+      config: {
+        numberOfVideos: 1,
+        resolution: '720p',
+        aspectRatio: '9:16'
+      }
+    });
+
+    while (!operation.done) {
+      await new Promise(resolve => setTimeout(resolve, 10000));
+      operation = await ai.operations.getVideosOperation({operation: operation});
+    }
+
+    const downloadLink = operation.response?.generatedVideos?.[0]?.video?.uri;
+    if (!downloadLink) {
+      throw new Error("No video URI returned");
+    }
+
+    const response = await fetch(downloadLink, {
+      method: 'GET',
+      headers: {
+        'x-goog-api-key': apiKey,
       },
     });
 
@@ -470,6 +552,136 @@ export const generateCharacter = async (params: CharacterParams): Promise<Charac
   });
 };
 
+export const analyzeMediaToPrompt = async (mediaData: string, mimeType: string, analysisMode: string = 'Standard'): Promise<string> => {
+  const apiKey = getEffectiveApiKey();
+  const ai = new GoogleGenAI({ apiKey });
+  const model = "gemini-3-flash-preview";
+
+  const modeInstructions: Record<string, string> = {
+    'Standard': "Analyze this image/video and generate a highly detailed, professional English prompt that can be used to recreate this exact visual style, composition, lighting, and subject in an AI image/video generator. Focus on technical details like camera angle, lighting type, color palette, and specific artistic style.",
+    'Cinematic': "Analyze this image/video and generate a cinematic, movie-like English prompt. Focus on dramatic lighting (chiaroscuro, rim lighting), anamorphic lens flares, shallow depth of field, and high-end film stock textures (Kodak, Fujifilm).",
+    'Anime': "Analyze this image/video and translate it into a high-quality anime/manga style prompt. Mention specific studios like Studio Ghibli or Ufotable, and use terms like 'cel shaded', 'vibrant colors', and 'hand-drawn line art'.",
+    'Cyberpunk': "Analyze this image/video and reinterpret it in a Cyberpunk/Neon-Noir style. Focus on neon lights, rainy streets, futuristic technology, and high-contrast blue/pink color palettes.",
+    'Technical': "Provide a purely technical breakdown of this image/video as a prompt. Focus on lens focal length (e.g., 35mm, 85mm), aperture (f/1.8), ISO, shutter speed, and specific post-processing techniques (color grading, grain, sharpening)."
+  };
+
+  const instruction = modeInstructions[analysisMode] || modeInstructions['Standard'];
+
+  return callWithRetry(async () => {
+    const base64Data = mediaData.split(',')[1] || mediaData;
+    
+    const response = await ai.models.generateContent({
+      model,
+      contents: [
+        {
+          inlineData: {
+            data: base64Data,
+            mimeType: mimeType
+          }
+        },
+        {
+          text: `${instruction} Return ONLY the prompt text, no other explanation.`
+        }
+      ]
+    });
+
+    if (response.text) {
+      return response.text.trim();
+    }
+    throw new Error("No response text generated");
+  });
+};
+
+export const generateFigureImage = async (imageBase64: string): Promise<string> => {
+  const apiKey = getEffectiveApiKey();
+  const ai = new GoogleGenAI({ apiKey });
+  const model = 'gemini-2.5-flash-image';
+
+  const basePrompt = `Create a 1/7 scale commercialized figure of the character in the illustration, in a hyper-detailed, photorealistic style and environment. Place the figure on a computer desk, using a circular transparent acrylic base without any text. On the iMac screen, display the Blender modeling process of the figure with a crystal-clear interface. Next to the computer screen, place a TAKARA-TOMY-style toy packaging box printed with the original artwork, ensuring sharp and vibrant details. Render the scene in ultra-high resolution 4K with realistic lighting, soft ambient shadows, and subtle reflections. Ensure hyper-detailed textures on the figure, packaging, and environment, with clean, crisp visuals free of noise and artifacts. Capture the scene in a close-up medium shot to emphasize the figure’s intricate details and the clarity of the iMac screen and packaging.`;
+
+  return callWithRetry(async () => {
+    const base64Data = imageBase64.split(',')[1] || imageBase64;
+    
+    const response = await ai.models.generateContent({
+      model,
+      contents: {
+        parts: [
+          {
+            inlineData: {
+              data: base64Data,
+              mimeType: 'image/png',
+            },
+          },
+          {
+            text: basePrompt,
+          },
+        ],
+      },
+    });
+
+    for (const part of response.candidates?.[0]?.content?.parts || []) {
+      if (part.inlineData) {
+        return `data:image/png;base64,${part.inlineData.data}`;
+      }
+    }
+    throw new Error("No image data found in response");
+  });
+};
+
+export const generateMovieSetPrompt = async (concept: string, fullObject: boolean = false): Promise<string> => {
+  const apiKey = getEffectiveApiKey();
+  const ai = new GoogleGenAI({ apiKey });
+  const model = "gemini-3-flash-preview";
+
+  const prompt = `
+    คุณคือ AI Prompt Engineer ผู้เชี่ยวชาญการสร้างคลิป Viral แนว Cinematic Horror/Mystery
+    Task: สร้าง Prompt สำหรับสร้างวิดีโอ (Video AI) ในธีม "Abandoned Movie Set" (กองถ่ายหนังร้าง)
+    คอนเซปต์/ตัวละคร: "${concept}"
+
+    สไตล์และบรรยากาศ (Style & Atmosphere):
+    - Cinematic, Eerie, Nostalgic, Hyper-realistic, 4K, 8K, Unreal Engine 5 render style.
+    - กองถ่ายที่ถูกทิ้งร้างมานาน มีฝุ่นหนาเตอะ (Thick dust), ใยแมงมุม (Cobwebs), เถาวัลย์ขึ้นปกคลุม (Overgrown vines).
+    - แสงสลัวๆ (Dim lighting), แสงแดดส่องผ่านช่องหน้าต่างเป็นลำ (God rays), หมอกจางๆ (Foggy atmosphere).
+    - อุปกรณ์กองถ่ายเก่าๆ (Old film cameras, rusty lighting rigs, torn green screens, broken director chairs).
+
+    การเคลื่อนไหวของกล้อง (Camera Movement):
+    - Slow drone shot หรือ Handheld camera ที่ดูสมจริงเหมือนคนแอบเข้าไปถ่าย (Found footage style).
+    - กล้องค่อยๆ แพนผ่านฉากที่พังทลาย เพื่อเผยให้เห็นตัวละครที่ยืนอยู่ท่ามกลางความเงียบเหงา.
+
+    ${fullObject ? `
+    Output ต้องเป็น JSON เท่านั้น โดยมีโครงสร้างดังนี้:
+    {
+      "image_prompt": "A hyper-realistic, cinematic wide shot of an abandoned movie set for '${concept}'. The set is filled with decaying props, thick dust, and overgrown vines. God rays shine through broken windows. The character(s) from '${concept}' are standing in the middle, looking lost and eerie. High contrast, 8k, photorealistic, moody atmosphere. --ar 9:16",
+      "video_prompt": "A slow, eerie handheld camera movement walking through the abandoned movie set of '${concept}'. The camera pans to reveal the character(s) standing still like ghosts among rusty film equipment and torn curtains. Dust particles floating in the air. Cinematic lighting, found footage style, hyper-realistic."
+    }
+    ` : `
+    Output: ให้ตอบเฉพาะ Prompt ภาษาอังกฤษ 1 ย่อหน้ายาวๆ ที่บรรยายฉาก การเคลื่อนไหวของกล้อง และบรรยากาศให้ครบถ้วน ห้ามมีข้อความอื่นปน
+    `}
+  `;
+
+  return callWithRetry(async () => {
+    const response = await ai.models.generateContent({
+      model,
+      contents: prompt,
+      config: fullObject ? {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            image_prompt: { type: Type.STRING },
+            video_prompt: { type: Type.STRING }
+          },
+          required: ["image_prompt", "video_prompt"]
+        }
+      } : undefined
+    });
+
+    if (response.text) {
+      return response.text.trim();
+    }
+    throw new Error("No response text generated");
+  });
+};
 export const generateStory = async (params: StoryParams): Promise<StoryData> => {
   const apiKey = getEffectiveApiKey();
   const ai = new GoogleGenAI({ apiKey });

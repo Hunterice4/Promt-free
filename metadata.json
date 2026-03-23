@@ -1,5 +1,5 @@
 {
   "name": "Autodraw Pro",
   "description": "AI-Powered Viral Script & Character Generator. ปลุกเสกสิ่งของให้มีชีวิตพร้อมวาดภาพประกอบสุดโปรด้วยพลัง Gemini AI",
-  "requestFramePermissions": []
+  "requestFramePermissions": ["camera", "microphone"]
 }

@@ -3,6 +3,7 @@ import { VisualStyle, CharacterData } from '../types';
 import { generateCharacter, generateImage, generateRandomConcept } from '../services/geminiService';
 import { SparklesIcon, UserIcon } from '@heroicons/react/24/solid';
 import { ClipboardDocumentIcon } from '@heroicons/react/24/outline';
+import { Tooltip } from './Tooltip';
 
 export const CharacterMode: React.FC = () => {
   const [concept, setConcept] = useState('');
@@ -109,7 +110,10 @@ export const CharacterMode: React.FC = () => {
         <div className="space-y-6">
           {/* Concept */}
           <div>
-            <label className="text-xs font-black text-gray-500 uppercase">💡 คอนเซปต์ตัวละคร</label>
+            <label className="text-xs font-black text-gray-500 uppercase flex items-center">
+              💡 คอนเซปต์ตัวละคร
+              <Tooltip content="ไอเดียหลักของตัวละคร เช่น นักรบมังกร, แฮกเกอร์ไซเบอร์พังค์" />
+            </label>
             <div className="relative group mt-2">
               <input type="text" value={concept} onChange={e => setConcept(e.target.value)} placeholder="เช่น นักรบมังกร, แฮกเกอร์ไซเบอร์พังค์" className="w-full bg-card border border-border rounded-xl p-4 pr-14 text-white focus:outline-none focus:border-[#0066ff] focus:ring-2 focus:ring-[#0066ff]/20" />
               <button
@@ -130,7 +134,10 @@ export const CharacterMode: React.FC = () => {
           {/* Gender & Age */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-black text-gray-500 uppercase">เพศ</label>
+              <label className="text-xs font-black text-gray-500 uppercase flex items-center">
+                เพศ
+                <Tooltip content="ระบุเพศของตัวละคร" />
+              </label>
               <div className="flex gap-2 mt-2">
                 {['ชาย', 'หญิง'].map(g => (
                   <button key={g} onClick={() => setGender(g)} className={`flex-1 py-3 rounded-xl font-bold border transition-all ${gender === g ? 'bg-[#0066ff]/10 border-[#0066ff] text-white' : 'bg-card border-border text-gray-400 hover:text-white hover:border-gray-500'}`}>{g}</button>
@@ -138,14 +145,20 @@ export const CharacterMode: React.FC = () => {
               </div>
             </div>
             <div>
-              <label className="text-xs font-black text-gray-500 uppercase">อายุ</label>
+              <label className="text-xs font-black text-gray-500 uppercase flex items-center">
+                อายุ
+                <Tooltip content="ระบุอายุของตัวละคร (มีผลต่อรูปลักษณ์)" />
+              </label>
               <input type="number" value={age} onChange={e => setAge(e.target.value)} className="w-full bg-card border border-border rounded-xl p-3 text-white mt-2 focus:outline-none focus:border-[#0066ff] focus:ring-2 focus:ring-[#0066ff]/20" />
             </div>
           </div>
 
           {/* Skin Tone */}
           <div>
-            <label className="text-xs font-black text-gray-500 uppercase">สีผิว</label>
+            <label className="text-xs font-black text-gray-500 uppercase flex items-center">
+              สีผิว
+              <Tooltip content="เลือกสีผิวที่ต้องการ" />
+            </label>
             <div className="grid grid-cols-3 gap-2 mt-2">
               {skinTones.map(t => (
                 <button key={t} onClick={() => setSkinTone(t)} className={`p-2 rounded-lg text-xs font-bold border transition-all ${skinTone === t ? 'bg-[#0066ff]/10 border-[#0066ff] text-white' : 'bg-card border-border text-gray-400 hover:text-white hover:border-gray-500'}`}>{t}</button>
@@ -155,7 +168,10 @@ export const CharacterMode: React.FC = () => {
 
           {/* Hairstyle */}
           <div>
-            <label className="text-xs font-black text-gray-500 uppercase">ทรงผม</label>
+            <label className="text-xs font-black text-gray-500 uppercase flex items-center">
+              ทรงผม
+              <Tooltip content="เลือกทรงผมและสีผม" />
+            </label>
             <div className="grid grid-cols-2 gap-2 mt-2">
               {hairStyles.map(h => (
                 <button key={h} onClick={() => setHairStyle(h)} className={`p-2 rounded-lg text-xs font-bold border transition-all ${hairStyle === h ? 'bg-[#0066ff]/10 border-[#0066ff] text-white' : 'bg-card border-border text-gray-400 hover:text-white hover:border-gray-500'}`}>{h}</button>
@@ -165,7 +181,10 @@ export const CharacterMode: React.FC = () => {
 
           {/* Face Shape */}
           <div>
-            <label className="text-xs font-black text-gray-500 uppercase">โครงหน้า / สัญชาติ</label>
+            <label className="text-xs font-black text-gray-500 uppercase flex items-center">
+              โครงหน้า / สัญชาติ
+              <Tooltip content="ระบุโครงหน้าหรือสัญชาติ" />
+            </label>
             <div className="grid grid-cols-3 gap-2 mt-2">
               {faceShapes.map(f => (
                 <button key={f} onClick={() => setFaceShape(f)} className={`p-2 rounded-lg text-xs font-bold border transition-all ${faceShape === f ? 'bg-[#0066ff]/10 border-[#0066ff] text-white' : 'bg-card border-border text-gray-400 hover:text-white hover:border-gray-500'}`}>{f}</button>
@@ -175,7 +194,10 @@ export const CharacterMode: React.FC = () => {
 
           {/* Personality */}
           <div>
-            <label className="text-xs font-black text-gray-500 uppercase">บุคลิก</label>
+            <label className="text-xs font-black text-gray-500 uppercase flex items-center">
+              บุคลิก
+              <Tooltip content="ระบุลักษณะนิสัยของตัวละคร" />
+            </label>
             <div className="grid grid-cols-4 gap-2 mt-2">
               {personalities.map(p => (
                 <button key={p} onClick={() => setPersonality(p)} className={`p-2 rounded-lg text-[10px] font-bold border transition-all ${personality === p ? 'bg-[#0066ff]/10 border-[#0066ff] text-white' : 'bg-card border-border text-gray-400 hover:text-white hover:border-gray-500'}`}>{p}</button>
@@ -186,14 +208,20 @@ export const CharacterMode: React.FC = () => {
           {/* Facial Hair (Male only) */}
           {gender === 'ชาย' && (
             <div>
-              <label className="text-xs font-black text-gray-500 uppercase">หนวดเครา</label>
+              <label className="text-xs font-black text-gray-500 uppercase flex items-center">
+                หนวดเครา
+                <Tooltip content="ระบุหนวดเครา (สำหรับตัวละครชาย)" />
+              </label>
               <input type="text" value={facialHair} onChange={e => setFacialHair(e.target.value)} placeholder="เช่น หนวดบางๆ, เคราเต็มใบหน้า" className="w-full bg-card border border-border rounded-xl p-3 text-white mt-2 focus:outline-none focus:border-[#0066ff] focus:ring-2 focus:ring-[#0066ff]/20" />
             </div>
           )}
 
           {/* Clothing */}
           <div>
-            <label className="text-xs font-black text-gray-500 uppercase">เสื้อผ้า</label>
+            <label className="text-xs font-black text-gray-500 uppercase flex items-center">
+              เสื้อผ้า
+              <Tooltip content="เลือกสไตล์การแต่งกาย" />
+            </label>
             <div className="grid grid-cols-2 gap-2 mt-2">
               {clothingOptions.map(c => (
                 <button key={c} onClick={() => setClothing(c)} className={`p-2 rounded-lg text-xs font-bold border transition-all ${clothing === c ? 'bg-[#0066ff]/10 border-[#0066ff] text-white' : 'bg-card border-border text-gray-400 hover:text-white hover:border-gray-500'}`}>{c}</button>
@@ -203,7 +231,10 @@ export const CharacterMode: React.FC = () => {
 
           {/* Clothing Color */}
           <div>
-            <label className="text-xs font-black text-gray-500 uppercase">สีเสื้อ</label>
+            <label className="text-xs font-black text-gray-500 uppercase flex items-center">
+              สีเสื้อ
+              <Tooltip content="เลือกสีหลักของเสื้อผ้า" />
+            </label>
             <div className="flex gap-2 mt-2">
               {clothingColors.map(c => (
                 <button key={c} onClick={() => setClothingColor(c)} className={`flex-1 py-2 rounded-lg text-xs font-bold border transition-all ${clothingColor === c ? 'bg-[#0066ff]/10 border-[#0066ff] text-white' : 'bg-card border-border text-gray-400 hover:text-white hover:border-gray-500'}`}>{c}</button>
@@ -213,19 +244,28 @@ export const CharacterMode: React.FC = () => {
 
           {/* Accessories */}
           <div>
-            <label className="text-xs font-black text-gray-500 uppercase">อุปกรณ์เสริม</label>
+            <label className="text-xs font-black text-gray-500 uppercase flex items-center">
+              อุปกรณ์เสริม
+              <Tooltip content="ระบุอุปกรณ์เสริม เช่น แว่นตา, ดาบ, กระเป๋า" />
+            </label>
             <input type="text" value={accessories} onChange={e => setAccessories(e.target.value)} placeholder="เช่น แว่นกันแดด, ดาบ, กระเป๋าเป้" className="w-full bg-card border border-border rounded-xl p-3 text-white mt-2 focus:outline-none focus:border-[#0066ff] focus:ring-2 focus:ring-[#0066ff]/20" />
           </div>
 
           {/* Body Details */}
           <div>
-            <label className="text-xs font-black text-gray-500 uppercase">รายละเอียดรูปร่าง</label>
+            <label className="text-xs font-black text-gray-500 uppercase flex items-center">
+              รายละเอียดรูปร่าง
+              <Tooltip content="ระบุรายละเอียดรูปร่าง เช่น มีกล้ามเนื้อ, เอวบาง" />
+            </label>
             <input type="text" value={bodyDetails} onChange={e => setBodyDetails(e.target.value)} placeholder="เช่น หุ่นนางแบบ, มีกล้ามเนื้อ, นมใหญ่, เอวบาง" className="w-full bg-card border border-border rounded-xl p-3 text-white mt-2 focus:outline-none focus:border-[#0066ff] focus:ring-2 focus:ring-[#0066ff]/20" />
           </div>
 
           {/* Visual Style */}
           <div>
-            <label className="text-xs font-black text-gray-500 uppercase">🎨 สไตล์ภาพ</label>
+            <label className="text-xs font-black text-gray-500 uppercase flex items-center">
+              🎨 สไตล์ภาพ
+              <Tooltip content="เลือกสไตล์ภาพที่ต้องการสร้าง" />
+            </label>
             <div className="grid grid-cols-3 gap-2 mt-2">
               {Object.values(VisualStyle).map(s => (
                 <button key={s} onClick={() => setStyle(s)} className={`p-2 rounded-lg text-[10px] font-bold border transition-all ${style === s ? 'bg-[#0066ff]/10 border-[#0066ff] text-white' : 'bg-card border-border text-gray-400 hover:text-white hover:border-gray-500'}`}>{s}</button>
