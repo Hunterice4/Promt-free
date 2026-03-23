@@ -360,7 +360,7 @@ export const generateVideo = async (prompt: string, imageBase64: string): Promis
   const ai = new GoogleGenAI({ apiKey });
   
   return callWithRetry(async () => {
-    const base64Data = imageBase64.split(',')[1];
+    const base64Data = imageBase64.split(',')[1] || imageBase64;
     
     let operation = await ai.models.generateVideos({
       model: 'veo-3.1-fast-generate-preview',
@@ -642,21 +642,22 @@ export const generateMovieSetPrompt = async (concept: string, fullObject: boolea
     คอนเซปต์/ตัวละคร: "${concept}"
 
     สไตล์และบรรยากาศ (Style & Atmosphere):
-    - Cinematic Horror, Eerie, Nostalgic, Hyper-realistic, 8K, Unreal Engine 5.
-    - กองถ่ายที่ถูกทิ้งร้างมานาน มีฝุ่นหนาเตอะ (Thick dust), ใยแมงมุม (Cobwebs), เถาวัลย์ขึ้นปกคลุม (Overgrown vines).
-    - แสงสลัวๆ (Dim lighting), แสงแดดส่องผ่านช่องหน้าต่างเป็นลำ (God rays), หมอกจางๆ (Foggy atmosphere).
-    - อุปกรณ์กองถ่ายเก่าๆ (Old film cameras, rusty lighting rigs, torn green screens, broken director chairs).
-    - ตัวละครต้องดูเหมือน "ผี" หรือ "วิญญาณ" ที่ยังติดอยู่ในกองถ่าย (Ghostly presence, hollow eyes, slightly translucent or just very still and eerie).
+    - Cinematic Horror, Eerie, Nostalgic, Hyper-realistic, 8K, Unreal Engine 5, Masterpiece.
+    - กองถ่ายที่ถูกทิ้งร้างมานาน มีฝุ่นหนาเตอะ (Thick dust), ใยแมงมุม (Cobwebs), เถาวัลย์ขึ้นปกคลุม (Overgrown vines), ผ้าม่านขาดๆ (Torn curtains).
+    - แสงสลัวๆ (Dim lighting), แสงแดดส่องผ่านช่องหน้าต่างเป็นลำ (God rays), หมอกจางๆ (Foggy atmosphere), แสงสีฟ้าหม่นหรือเขียวซีด (Muted blue or pale green tint).
+    - อุปกรณ์กองถ่ายเก่าๆ (Old film cameras, rusty lighting rigs, torn green screens, broken director chairs, film reels scattered).
+    - ตัวละครต้องดูเหมือน "ผี" หรือ "วิญญาณ" ที่ยังติดอยู่ในกองถ่าย (Ghostly presence, hollow eyes, slightly translucent, very still and eerie, wearing tattered clothes).
+    - บรรยากาศแบบ Liminal Space ที่ดูแปลกประหลาดและน่าขนลุก.
 
     การเคลื่อนไหวของกล้อง (Camera Movement):
-    - Slow, shaky handheld camera movement (Found footage style).
-    - ค่อยๆ แพนกล้องจากความมืดไปหาตัวละครที่ยืนนิ่งอยู่.
+    - Slow, shaky handheld camera movement (Found footage style), slow zoom-in, subtle panning.
+    - ค่อยๆ แพนกล้องจากความมืดไปหาตัวละครที่ยืนนิ่งอยู่กลางฉาก.
 
     ${fullObject ? `
     Output ต้องเป็น JSON เท่านั้น โดยมีโครงสร้างดังนี้:
     {
-      "image_prompt": "A hyper-realistic, cinematic wide shot of an abandoned movie set for '${concept}'. The set is filled with decaying props, thick dust, and overgrown vines. God rays shine through broken windows, illuminating dust particles. The character(s) from '${concept}' are standing in the middle, looking lost, eerie, and ghostly. High contrast, 8k, photorealistic, moody horror atmosphere, cinematic lighting. --ar 9:16",
-      "video_prompt": "A slow, shaky handheld found-footage style camera walking through the dark, abandoned movie set of '${concept}'. The camera pans to reveal the character(s) standing perfectly still like a ghost among rusty film equipment and torn curtains. Dust floating in the air, eerie silence, cinematic horror lighting, hyper-realistic, 8k."
+      "image_prompt": "A hyper-realistic, cinematic wide shot of an abandoned, decaying movie set for '${concept}'. The environment is filled with thick dust, heavy cobwebs, and overgrown vines. Muted cinematic lighting with god rays piercing through broken ceiling tiles. The character(s) from '${concept}' appear as ghostly, eerie figures standing motionless in the center, slightly translucent with hollow eyes. Rusty film equipment and torn green screens in the background. High contrast, 8k, photorealistic, moody horror atmosphere, cinematic color grading. --ar 9:16",
+      "video_prompt": "A slow, shaky handheld found-footage style camera walking through a dark, abandoned movie set of '${concept}'. The camera slowly pans and zooms in to reveal the character(s) standing perfectly still like a ghost among rusty film cameras and scattered film reels. Dust particles floating in the air, eerie silence, cinematic horror lighting, hyper-realistic, 8k, volumetric lighting, ghostly motion blur."
     }
     ` : `
     Output: ให้ตอบเฉพาะ Prompt ภาษาอังกฤษ 1 ย่อหน้ายาวๆ ที่บรรยายฉาก การเคลื่อนไหวของกล้อง และบรรยากาศให้ครบถ้วน ห้ามมีข้อความอื่นปน

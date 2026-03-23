@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { generateMovieSetPrompt, generateImage, generateVideo } from '../services/geminiService';
+import { generateMovieSetPrompt, generateImage } from '../services/geminiService';
 import { SparklesIcon, TrashIcon, PhotoIcon, VideoCameraIcon, UserIcon, UsersIcon, ArrowDownTrayIcon } from '@heroicons/react/24/solid';
 
 export const MovieSetMode: React.FC = () => {
@@ -8,11 +8,10 @@ export const MovieSetMode: React.FC = () => {
   const [char2, setChar2] = useState('Hermione Granger');
   const [mode, setMode] = useState<'1char' | '2chars'>('1char');
   const [loading, setLoading] = useState(false);
-  const [videoLoading, setVideoLoading] = useState(false);
   const [imageResult, setImageResult] = useState<string | null>(null);
-  const [videoResult, setVideoResult] = useState<string | null>(null);
   const [imagePrompt, setImagePrompt] = useState<string | null>(null);
   const [videoPrompt, setVideoPrompt] = useState<string | null>(null);
+  const [autoGenerateImage, setAutoGenerateImage] = useState(true);
   const [hasPaidKey, setHasPaidKey] = useState<boolean | null>(null);
 
   React.useEffect(() => {
@@ -34,53 +33,29 @@ export const MovieSetMode: React.FC = () => {
     }
   };
 
-  const handleGenerateImage = async () => {
+  const handleGenerate = async () => {
     if (!char1 || (mode === '2chars' && !char2)) return;
     setLoading(true);
     setImageResult(null);
-    setVideoResult(null);
+    setImagePrompt(null);
+    setVideoPrompt(null);
     try {
       const concept = mode === '1char' ? char1 : `${char1} and ${char2}`;
       // Get a detailed prompt for the image
-      const prompts = await generateMovieSetPrompt(concept, true); // true for full object
+      const prompts = await generateMovieSetPrompt(concept, true);
       const parsed = JSON.parse(prompts);
       setImagePrompt(parsed.image_prompt);
       setVideoPrompt(parsed.video_prompt);
       
-      const imageUrl = await generateImage(parsed.image_prompt);
-      setImageResult(imageUrl);
+      if (autoGenerateImage) {
+        const imageUrl = await generateImage(parsed.image_prompt);
+        setImageResult(imageUrl);
+      }
     } catch (error: any) {
       console.error(error);
-      alert("เกิดข้อผิดพลาดในการเจนรูป: " + error.message);
+      alert("เกิดข้อผิดพลาด: " + error.message);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleGenerateVideo = async () => {
-    if (!imageResult || !videoPrompt) return;
-    setVideoLoading(true);
-    try {
-      const videoUrl = await generateVideo(videoPrompt, imageResult);
-      setVideoResult(videoUrl);
-    } catch (error: any) {
-      console.error(error);
-      if (error.message?.includes("PERMISSION_DENIED")) {
-        // Show key selector if permission denied
-        const aistudio = (window as any).aistudio;
-        if (aistudio?.openSelectKey) {
-          if (confirm("คุณยังไม่ได้เชื่อมต่อ Paid API Key หรือ Key ของคุณไม่มีสิทธิ์ใช้งานฟีเจอร์นี้ ต้องการเชื่อมต่อตอนนี้เลยไหม? (จำเป็นสำหรับการสร้างวิดีโอ)")) {
-            await aistudio.openSelectKey();
-            setHasPaidKey(true);
-          }
-        } else {
-          alert(error.message);
-        }
-      } else {
-        alert("เกิดข้อผิดพลาดในการเจนวิดีโอ: " + error.message);
-      }
-    } finally {
-      setVideoLoading(false);
     }
   };
 
@@ -151,11 +126,24 @@ export const MovieSetMode: React.FC = () => {
             )}
           </div>
 
+          <div className="flex items-center gap-3 p-4 bg-card border border-border rounded-xl">
+            <input 
+              type="checkbox" 
+              id="autoGen"
+              checked={autoGenerateImage}
+              onChange={(e) => setAutoGenerateImage(e.target.checked)}
+              className="w-5 h-5 rounded border-gray-300 text-[#0066ff] focus:ring-[#0066ff]"
+            />
+            <label htmlFor="autoGen" className="text-sm font-bold text-gray-300 cursor-pointer">
+              เปิดการเจนรูปภาพอัตโนมัติ
+            </label>
+          </div>
+
           <button
-            onClick={handleGenerateImage}
-            disabled={loading || videoLoading || !char1 || (mode === '2chars' && !char2)}
+            onClick={handleGenerate}
+            disabled={loading || !char1 || (mode === '2chars' && !char2)}
             className={`w-full py-4 rounded-xl font-black text-lg flex items-center justify-center gap-3 transition-all shadow-xl ${
-              loading || videoLoading
+              loading
                 ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
                 : 'bg-[#0066ff] text-white hover:bg-[#0055dd] active:scale-95'
             }`}
@@ -163,29 +151,10 @@ export const MovieSetMode: React.FC = () => {
             {loading ? (
               <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
             ) : (
-              <PhotoIcon className="w-6 h-6" />
+              <SparklesIcon className="w-6 h-6" />
             )}
-            <span>{loading ? 'กำลังเจนรูป...' : '1. เจนรูปภาพ'}</span>
+            <span>{loading ? 'กำลังประมวลผล...' : 'สร้างพ้อมและรูปภาพ'}</span>
           </button>
-
-          {imageResult && (
-            <button
-              onClick={handleGenerateVideo}
-              disabled={videoLoading || loading}
-              className={`w-full py-4 rounded-xl font-black text-lg flex items-center justify-center gap-3 transition-all shadow-xl animate-fade-in ${
-                videoLoading
-                  ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
-                  : 'bg-purple-600 text-white hover:bg-purple-700 active:scale-95'
-              }`}
-            >
-              {videoLoading ? (
-                <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              ) : (
-                <VideoCameraIcon className="w-6 h-6" />
-              )}
-              <span>{videoLoading ? 'กำลังเจนวิดีโอ...' : '2. เจนวิดีโอ (Veo)'}</span>
-            </button>
-          )}
 
           {hasPaidKey === false && (
             <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl space-y-3 animate-fade-in mt-4">
@@ -204,26 +173,6 @@ export const MovieSetMode: React.FC = () => {
               </button>
             </div>
           )}
-
-          {/* Example Section */}
-          <div className="pt-6 border-t border-border">
-            <h4 className="text-xs font-black text-gray-500 uppercase tracking-widest mb-4">ตัวอย่างผลลัพธ์ (Example)</h4>
-            <div className="bg-card border border-border rounded-xl overflow-hidden group cursor-pointer" onClick={() => {
-              setChar1('Harry Potter');
-              setMode('1char');
-            }}>
-              <img 
-                src="https://picsum.photos/seed/abandoned-movie/400/225" 
-                alt="Example" 
-                className="w-full aspect-video object-cover opacity-50 group-hover:opacity-100 transition-opacity"
-                referrerPolicy="no-referrer"
-              />
-              <div className="p-3">
-                <p className="text-[10px] text-gray-400 font-bold">Abandoned Harry Potter Set</p>
-                <p className="text-[9px] text-gray-600 mt-1 italic line-clamp-2">"A hyper-realistic, cinematic wide shot of an abandoned movie set for Harry Potter..."</p>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -248,15 +197,15 @@ export const MovieSetMode: React.FC = () => {
           </div>
         )}
 
-        {(imageResult || videoResult) && (
+        {(imageResult || imagePrompt) && (
           <div className="w-full max-w-4xl space-y-8 animate-fade-in">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="flex flex-col items-center gap-8">
               {/* Image Result */}
               {imageResult && (
-                <div className="space-y-4">
+                <div className="w-full max-w-md space-y-4">
                   <div className="flex items-center justify-between">
                     <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                      <PhotoIcon className="w-5 h-5 text-[#0066ff]" /> รูปภาพตั้งต้น
+                      <PhotoIcon className="w-5 h-5 text-[#0066ff]" /> รูปภาพที่สร้าง
                     </h3>
                     <button 
                       onClick={() => handleDownload(imageResult, 'movie-set-image.png')}
@@ -271,47 +220,52 @@ export const MovieSetMode: React.FC = () => {
                 </div>
               )}
 
-              {/* Video Result */}
-              <div className="space-y-4">
-                <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                  <VideoCameraIcon className="w-5 h-5 text-purple-500" /> วิดีโอไวรัล (Veo)
-                </h3>
-                {videoLoading ? (
-                  <div className="aspect-[9/16] bg-card rounded-3xl border border-border flex flex-col items-center justify-center space-y-4 p-8 text-center">
-                    <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
-                    <p className="text-gray-400 text-sm">กำลังประมวลผลวิดีโอ... <br />อาจใช้เวลา 1-2 นาที</p>
-                  </div>
-                ) : videoResult ? (
-                  <div className="space-y-4">
-                    <div className="aspect-[9/16] bg-card rounded-3xl overflow-hidden border border-border shadow-2xl relative group">
-                      <video src={videoResult} className="w-full h-full object-cover" controls autoPlay loop />
+              {imagePrompt && (
+                <div className="w-full space-y-6">
+                  <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                        <PhotoIcon className="w-4 h-4" /> Image Prompt (พ้อมสร้างภาพ)
+                      </h4>
                       <button 
-                        onClick={() => handleDownload(videoResult, 'movie-set-video.mp4')}
-                        className="absolute top-4 right-4 p-3 rounded-xl bg-black/50 backdrop-blur-md text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => {
+                          navigator.clipboard.writeText(imagePrompt);
+                          alert("คัดลอกพ้อมสร้างภาพแล้ว!");
+                        }}
+                        className="text-xs font-bold text-[#0066ff] hover:underline"
                       >
-                        <ArrowDownTrayIcon className="w-6 h-6" />
+                        คัดลอก
                       </button>
                     </div>
+                    <p className="text-sm text-gray-200 leading-relaxed italic font-serif">"{imagePrompt}"</p>
                   </div>
-                ) : (
-                  <div className="aspect-[9/16] bg-card rounded-3xl border-2 border-dashed border-border flex flex-col items-center justify-center text-center p-8 opacity-30">
-                    <VideoCameraIcon className="w-12 h-12 text-gray-700 mb-2" />
-                    <p className="text-sm text-gray-500">เจนรูปภาพก่อน <br />เพื่อเริ่มสร้างวิดีโอ</p>
-                  </div>
-                )}
-              </div>
-            </div>
 
-            {imagePrompt && (
-              <div className="bg-card border border-border rounded-2xl p-6 space-y-2">
-                <h4 className="text-xs font-black text-gray-500 uppercase tracking-widest">Prompt ที่ใช้</h4>
-                <p className="text-sm text-gray-300 leading-relaxed italic">"{imagePrompt}"</p>
-              </div>
-            )}
+                  {videoPrompt && (
+                    <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-xs font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                          <VideoCameraIcon className="w-4 h-4" /> Video Prompt (พ้อมสร้างวิดีโอ)
+                        </h4>
+                        <button 
+                          onClick={() => {
+                            navigator.clipboard.writeText(videoPrompt);
+                            alert("คัดลอกพ้อมสร้างวิดีโอแล้ว!");
+                          }}
+                          className="text-xs font-bold text-purple-500 hover:underline"
+                        >
+                          คัดลอก
+                        </button>
+                      </div>
+                      <p className="text-sm text-gray-200 leading-relaxed italic font-serif">"{videoPrompt}"</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
 
             <div className="bg-[#0066ff]/5 border border-[#0066ff]/20 rounded-2xl p-6 text-center">
               <p className="text-sm text-gray-400">
-                <strong className="text-[#0066ff]">Tip:</strong> นำ Prompt นี้ไปใช้ใน <span className="font-bold">Luma Dream Machine</span> หรือ <span className="font-bold">Kling AI</span> เพื่อผลลัพธ์ที่ดีที่สุด!
+                <strong className="text-[#0066ff]">Tip:</strong> นำพ้อม (Prompt) นี้ไปใช้ใน <span className="font-bold">Luma Dream Machine</span>, <span className="font-bold">Kling AI</span> หรือ <span className="font-bold">Runway Gen-3</span> เพื่อสร้างวิดีโอสุดหลอน!
               </p>
             </div>
           </div>
