@@ -126,7 +126,19 @@ export const VisionMode: React.FC = () => {
       const videoUrl = await generateVideo(result, media);
       setGenResult({ type: 'video', url: videoUrl });
     } catch (error: any) {
-      alert("สร้างวิดีโอไม่สำเร็จ: " + error.message);
+      if (error.message?.includes("PERMISSION_DENIED")) {
+        const aistudio = (window as any).aistudio;
+        if (aistudio?.openSelectKey) {
+          if (confirm("คุณยังไม่ได้เชื่อมต่อ Paid API Key หรือ Key ของคุณไม่มีสิทธิ์ใช้งานฟีเจอร์นี้ ต้องการเชื่อมต่อตอนนี้เลยไหม? (จำเป็นสำหรับการสร้างวิดีโอ)")) {
+            await aistudio.openSelectKey();
+            setHasPaidKey(true);
+          }
+        } else {
+          alert(error.message);
+        }
+      } else {
+        alert("สร้างวิดีโอไม่สำเร็จ: " + error.message);
+      }
     } finally {
       setGenLoading(null);
     }

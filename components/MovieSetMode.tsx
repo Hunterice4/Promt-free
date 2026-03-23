@@ -13,6 +13,26 @@ export const MovieSetMode: React.FC = () => {
   const [videoResult, setVideoResult] = useState<string | null>(null);
   const [imagePrompt, setImagePrompt] = useState<string | null>(null);
   const [videoPrompt, setVideoPrompt] = useState<string | null>(null);
+  const [hasPaidKey, setHasPaidKey] = useState<boolean | null>(null);
+
+  React.useEffect(() => {
+    const checkKey = async () => {
+      const aistudio = (window as any).aistudio;
+      if (aistudio?.hasSelectedApiKey) {
+        const hasKey = await aistudio.hasSelectedApiKey();
+        setHasPaidKey(hasKey);
+      }
+    };
+    checkKey();
+  }, []);
+
+  const handleOpenKeySelector = async () => {
+    const aistudio = (window as any).aistudio;
+    if (aistudio?.openSelectKey) {
+      await aistudio.openSelectKey();
+      setHasPaidKey(true);
+    }
+  };
 
   const handleGenerateImage = async () => {
     if (!char1 || (mode === '2chars' && !char2)) return;
@@ -45,7 +65,20 @@ export const MovieSetMode: React.FC = () => {
       setVideoResult(videoUrl);
     } catch (error: any) {
       console.error(error);
-      alert("เกิดข้อผิดพลาดในการเจนวิดีโอ: " + error.message);
+      if (error.message?.includes("PERMISSION_DENIED")) {
+        // Show key selector if permission denied
+        const aistudio = (window as any).aistudio;
+        if (aistudio?.openSelectKey) {
+          if (confirm("คุณยังไม่ได้เชื่อมต่อ Paid API Key หรือ Key ของคุณไม่มีสิทธิ์ใช้งานฟีเจอร์นี้ ต้องการเชื่อมต่อตอนนี้เลยไหม? (จำเป็นสำหรับการสร้างวิดีโอ)")) {
+            await aistudio.openSelectKey();
+            setHasPaidKey(true);
+          }
+        } else {
+          alert(error.message);
+        }
+      } else {
+        alert("เกิดข้อผิดพลาดในการเจนวิดีโอ: " + error.message);
+      }
     } finally {
       setVideoLoading(false);
     }
@@ -153,6 +186,44 @@ export const MovieSetMode: React.FC = () => {
               <span>{videoLoading ? 'กำลังเจนวิดีโอ...' : '2. เจนวิดีโอ (Veo)'}</span>
             </button>
           )}
+
+          {hasPaidKey === false && (
+            <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl space-y-3 animate-fade-in mt-4">
+              <div className="flex items-start gap-3">
+                <div className="w-5 h-5 text-yellow-500 shrink-0 mt-0.5">⚠️</div>
+                <p className="text-xs text-yellow-500/80 leading-relaxed">
+                  <strong>จำเป็นต้องใช้ Paid API Key:</strong> ฟีเจอร์สร้างรูปภาพคุณภาพสูง ต้องใช้ API Key จากโปรเจกต์ Google Cloud ที่เปิดการเรียกเก็บเงินแล้ว
+                </p>
+              </div>
+              <button 
+                onClick={handleOpenKeySelector}
+                className="w-full py-2 bg-yellow-500 text-black rounded-lg text-xs font-black hover:bg-yellow-400 transition-all flex items-center justify-center gap-2"
+              >
+                <span>🔑</span>
+                เชื่อมต่อ Paid API Key
+              </button>
+            </div>
+          )}
+
+          {/* Example Section */}
+          <div className="pt-6 border-t border-border">
+            <h4 className="text-xs font-black text-gray-500 uppercase tracking-widest mb-4">ตัวอย่างผลลัพธ์ (Example)</h4>
+            <div className="bg-card border border-border rounded-xl overflow-hidden group cursor-pointer" onClick={() => {
+              setChar1('Harry Potter');
+              setMode('1char');
+            }}>
+              <img 
+                src="https://picsum.photos/seed/abandoned-movie/400/225" 
+                alt="Example" 
+                className="w-full aspect-video object-cover opacity-50 group-hover:opacity-100 transition-opacity"
+                referrerPolicy="no-referrer"
+              />
+              <div className="p-3">
+                <p className="text-[10px] text-gray-400 font-bold">Abandoned Harry Potter Set</p>
+                <p className="text-[9px] text-gray-600 mt-1 italic line-clamp-2">"A hyper-realistic, cinematic wide shot of an abandoned movie set for Harry Potter..."</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

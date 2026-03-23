@@ -112,10 +112,13 @@ const callWithRetry = async <T>(fn: () => Promise<T>, retries = MAX_RETRIES): Pr
     const isPermissionError = 
       errorMessage.includes('permission') || 
       errorMessage.includes('403') ||
+      errorMessage.includes('requested entity was not found') ||
       nestedErrorMessage.includes('permission') ||
       nestedErrorMessage.includes('403') ||
+      nestedErrorMessage.includes('requested entity was not found') ||
       errorString.includes('permission') ||
-      errorString.includes('403');
+      errorString.includes('403') ||
+      errorString.includes('requested entity was not found');
 
     if (isPermissionError) {
       throw new Error("PERMISSION_DENIED: กรุณาตรวจสอบ API Key ของคุณ หรือเชื่อมต่อ Paid API Key ในเมนูตั้งค่าเพื่อใช้งานฟีเจอร์นี้ (โดยเฉพาะการสร้างวิดีโอ)");
@@ -639,20 +642,21 @@ export const generateMovieSetPrompt = async (concept: string, fullObject: boolea
     คอนเซปต์/ตัวละคร: "${concept}"
 
     สไตล์และบรรยากาศ (Style & Atmosphere):
-    - Cinematic, Eerie, Nostalgic, Hyper-realistic, 4K, 8K, Unreal Engine 5 render style.
+    - Cinematic Horror, Eerie, Nostalgic, Hyper-realistic, 8K, Unreal Engine 5.
     - กองถ่ายที่ถูกทิ้งร้างมานาน มีฝุ่นหนาเตอะ (Thick dust), ใยแมงมุม (Cobwebs), เถาวัลย์ขึ้นปกคลุม (Overgrown vines).
     - แสงสลัวๆ (Dim lighting), แสงแดดส่องผ่านช่องหน้าต่างเป็นลำ (God rays), หมอกจางๆ (Foggy atmosphere).
     - อุปกรณ์กองถ่ายเก่าๆ (Old film cameras, rusty lighting rigs, torn green screens, broken director chairs).
+    - ตัวละครต้องดูเหมือน "ผี" หรือ "วิญญาณ" ที่ยังติดอยู่ในกองถ่าย (Ghostly presence, hollow eyes, slightly translucent or just very still and eerie).
 
     การเคลื่อนไหวของกล้อง (Camera Movement):
-    - Slow drone shot หรือ Handheld camera ที่ดูสมจริงเหมือนคนแอบเข้าไปถ่าย (Found footage style).
-    - กล้องค่อยๆ แพนผ่านฉากที่พังทลาย เพื่อเผยให้เห็นตัวละครที่ยืนอยู่ท่ามกลางความเงียบเหงา.
+    - Slow, shaky handheld camera movement (Found footage style).
+    - ค่อยๆ แพนกล้องจากความมืดไปหาตัวละครที่ยืนนิ่งอยู่.
 
     ${fullObject ? `
     Output ต้องเป็น JSON เท่านั้น โดยมีโครงสร้างดังนี้:
     {
-      "image_prompt": "A hyper-realistic, cinematic wide shot of an abandoned movie set for '${concept}'. The set is filled with decaying props, thick dust, and overgrown vines. God rays shine through broken windows. The character(s) from '${concept}' are standing in the middle, looking lost and eerie. High contrast, 8k, photorealistic, moody atmosphere. --ar 9:16",
-      "video_prompt": "A slow, eerie handheld camera movement walking through the abandoned movie set of '${concept}'. The camera pans to reveal the character(s) standing still like ghosts among rusty film equipment and torn curtains. Dust particles floating in the air. Cinematic lighting, found footage style, hyper-realistic."
+      "image_prompt": "A hyper-realistic, cinematic wide shot of an abandoned movie set for '${concept}'. The set is filled with decaying props, thick dust, and overgrown vines. God rays shine through broken windows, illuminating dust particles. The character(s) from '${concept}' are standing in the middle, looking lost, eerie, and ghostly. High contrast, 8k, photorealistic, moody horror atmosphere, cinematic lighting. --ar 9:16",
+      "video_prompt": "A slow, shaky handheld found-footage style camera walking through the dark, abandoned movie set of '${concept}'. The camera pans to reveal the character(s) standing perfectly still like a ghost among rusty film equipment and torn curtains. Dust floating in the air, eerie silence, cinematic horror lighting, hyper-realistic, 8k."
     }
     ` : `
     Output: ให้ตอบเฉพาะ Prompt ภาษาอังกฤษ 1 ย่อหน้ายาวๆ ที่บรรยายฉาก การเคลื่อนไหวของกล้อง และบรรยากาศให้ครบถ้วน ห้ามมีข้อความอื่นปน

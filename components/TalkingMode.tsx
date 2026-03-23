@@ -89,7 +89,19 @@ export const TalkingMode: React.FC = () => {
       setResult(videoUrl);
     } catch (error: any) {
       console.error(error);
-      alert("เกิดข้อผิดพลาดในการสร้างวิดีโอ: " + error.message);
+      if (error.message?.includes("PERMISSION_DENIED")) {
+        const aistudio = (window as any).aistudio;
+        if (aistudio?.openSelectKey) {
+          if (confirm("คุณยังไม่ได้เชื่อมต่อ Paid API Key หรือ Key ของคุณไม่มีสิทธิ์ใช้งานฟีเจอร์นี้ ต้องการเชื่อมต่อตอนนี้เลยไหม? (จำเป็นสำหรับการสร้างวิดีโอ)")) {
+            await aistudio.openSelectKey();
+            setHasPaidKey(true);
+          }
+        } else {
+          alert(error.message);
+        }
+      } else {
+        alert("เกิดข้อผิดพลาดในการสร้างวิดีโอ: " + error.message);
+      }
     } finally {
       setVideoLoading(false);
     }
