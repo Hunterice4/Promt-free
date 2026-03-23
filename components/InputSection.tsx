@@ -1,13 +1,19 @@
 
 import React, { useState } from 'react';
-import { VisualStyle, CharacterEmotion } from '../types';
-import { SparklesIcon, FaceSmileIcon, PencilSquareIcon } from '@heroicons/react/24/solid';
+import { VisualStyle, CharacterEmotion, ScriptTemplate, ScriptFramework } from '../types';
+import { SparklesIcon, FaceSmileIcon, PencilSquareIcon, DocumentTextIcon } from '@heroicons/react/24/solid';
 
 interface InputSectionProps {
   objectName: string;
   setObjectName: (val: string) => void;
   additionalDetails: string;
   setAdditionalDetails: (val: string) => void;
+  template: ScriptTemplate;
+  setTemplate: (val: ScriptTemplate) => void;
+  framework: ScriptFramework;
+  setFramework: (val: ScriptFramework) => void;
+  includeHeadline: boolean;
+  setIncludeHeadline: (val: boolean) => void;
   style: VisualStyle;
   setStyle: (val: VisualStyle) => void;
   emotion: CharacterEmotion;
@@ -22,8 +28,11 @@ interface InputSectionProps {
 const emotionOptions = [
   { type: CharacterEmotion.Angry, label: 'โมโห', icon: '😡' },
   { type: CharacterEmotion.Sarcastic, label: 'ด่านิดๆ', icon: '😏' },
+  { type: CharacterEmotion.Vulgar, label: 'หยาบดิบ', icon: '🤬' },
   { type: CharacterEmotion.Cute, label: 'น่ารัก', icon: '🥰' },
   { type: CharacterEmotion.Professional, label: 'มืออาชีพ', icon: '🧐' },
+  { type: CharacterEmotion.Depressed, label: 'ซึมเศร้า', icon: '😭' },
+  { type: CharacterEmotion.Psychotic, label: 'โรคจิต', icon: '🤪' },
 ];
 
 export const InputSection: React.FC<InputSectionProps> = ({
@@ -31,6 +40,12 @@ export const InputSection: React.FC<InputSectionProps> = ({
   setObjectName,
   additionalDetails,
   setAdditionalDetails,
+  template,
+  setTemplate,
+  framework,
+  setFramework,
+  includeHeadline,
+  setIncludeHeadline,
   style,
   setStyle,
   emotion,
@@ -53,10 +68,10 @@ export const InputSection: React.FC<InputSectionProps> = ({
     <div className="w-full lg:w-1/3 p-6 space-y-8 flex flex-col lg:h-full lg:overflow-y-auto bg-[#0a0a14] border-r border-border lg:custom-scrollbar">
       <div>
         <h1 className="text-3xl font-black text-white mb-2 tracking-tight">
-          Roast <span className="text-[#0066ff]">Master</span> AI
+          Autodraw <span className="text-[#0066ff]">Pro</span>
         </h1>
         <p className="text-gray-400 text-sm font-medium">
-          เปลี่ยนของกินของใช้ ให้ปากแจ๋วด้วยพลัง AI
+          ปลุกเสกสิ่งของให้มีชีวิต พร้อมวาดภาพประกอบสุดโปร
         </p>
       </div>
 
@@ -103,12 +118,68 @@ export const InputSection: React.FC<InputSectionProps> = ({
           />
         </div>
 
+        {/* Template Selection */}
+        <div className="space-y-2">
+          <label className="text-xs font-black text-gray-500 uppercase tracking-[0.2em] flex items-center gap-2">
+            <DocumentTextIcon className="w-4 h-4" /> รูปแบบเนื้อหา (Template)
+          </label>
+          <select
+            value={template}
+            onChange={(e) => setTemplate(e.target.value as ScriptTemplate)}
+            className="w-full bg-card border border-border rounded-xl p-4 text-white focus:outline-none focus:border-[#0066ff] focus:ring-2 focus:ring-[#0066ff]/20 transition-all appearance-none cursor-pointer"
+          >
+            {Object.values(ScriptTemplate).map((t) => (
+              <option key={t} value={t} className="bg-[#0a0a14] text-white">
+                {t}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Framework Selection */}
+        <div className="space-y-2">
+          <label className="text-xs font-black text-gray-500 uppercase tracking-[0.2em] flex items-center gap-2">
+            <SparklesIcon className="w-4 h-4" /> โครงสร้างสคริปต์ (Framework)
+          </label>
+          <select
+            value={framework}
+            onChange={(e) => setFramework(e.target.value as ScriptFramework)}
+            className="w-full bg-card border border-border rounded-xl p-4 text-white focus:outline-none focus:border-[#0066ff] focus:ring-2 focus:ring-[#0066ff]/20 transition-all appearance-none cursor-pointer"
+          >
+            {Object.values(ScriptFramework).map((f) => (
+              <option key={f} value={f} className="bg-[#0a0a14] text-white">
+                {f}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Headline Toggle */}
+        <div className="flex items-center justify-between bg-card p-4 rounded-xl border border-border">
+          <div className="space-y-1">
+            <label className="text-xs font-black text-white uppercase tracking-wider">พาดหัวเรื่อง (Headline)</label>
+            <p className="text-[10px] text-gray-500">ใส่พาดหัวในรูปแรกของวิดีโอ</p>
+          </div>
+          <button
+            onClick={() => setIncludeHeadline(!includeHeadline)}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+              includeHeadline ? 'bg-[#0066ff]' : 'bg-gray-700'
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                includeHeadline ? 'translate-x-6' : 'translate-x-1'
+              }`}
+            />
+          </button>
+        </div>
+
         {/* Character Emotion Selection */}
         <div className="space-y-3">
           <label className="text-xs font-black text-gray-500 uppercase tracking-[0.2em] flex items-center gap-2">
             <FaceSmileIcon className="w-4 h-4" /> อารมณ์ตัวละคร
           </label>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
             {emotionOptions.map((opt) => (
               <button
                 key={opt.type}
@@ -131,7 +202,7 @@ export const InputSection: React.FC<InputSectionProps> = ({
           <label className="text-xs font-black text-gray-500 uppercase tracking-[0.2em]">
             🎨 สไตล์ภาพ
           </label>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
             {Object.values(VisualStyle).map((s) => (
               <button
                 key={s}
@@ -171,7 +242,7 @@ export const InputSection: React.FC<InputSectionProps> = ({
         </div>
       </div>
 
-      <div className="pt-4 mt-auto">
+      <div className="pt-4 mt-auto space-y-4">
         <button
           onClick={onGenerate}
           disabled={loading || !objectName.trim()}
@@ -196,6 +267,18 @@ export const InputSection: React.FC<InputSectionProps> = ({
             </>
           )}
         </button>
+
+        <div className="text-center pb-2">
+          <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Created by</p>
+          <a 
+            href="https://www.facebook.com/ByteVerseAI" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-[#0066ff] text-xs font-black hover:underline"
+          >
+            Facebook: ByteVerse AI
+          </a>
+        </div>
       </div>
     </div>
   );
